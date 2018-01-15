@@ -51,7 +51,7 @@ jobs:
           name: Authenticating Pantheon Account
           command: |
             terminus auth:login --machine-token=${TERMINUS_TOKEN}
-            terminus whomai
+            terminus whomami
       - run:
           name: Deploying to provider
           command: |
