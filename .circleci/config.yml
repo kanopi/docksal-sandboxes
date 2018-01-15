@@ -1,17 +1,16 @@
+aliases:
+  - &configure-variables
+    |
+      touch $BASH_ENV
+      echo 'source build-env' >> $BASH_ENV
+      echo 'PATH="/tmp/terminus/vendor/bin:$PATH"' >> $BASH_ENV
+
 defaults: &defaults
   working_directory: /home/agent/build
   docker:
     - image: seandietrich/ci-agent:php
   environment:
      BASH_ENV: /home/agent/.bashrc  # Tell CircleCI where to read the shared build environment variables from
-  steps:
-    - checkout
-    - run:
-        name: Configure local build environment
-        command: |
-          touch $BASH_ENV
-          echo 'source build-env' >> $BASH_ENV
-          echo 'PATH="/tmp/terminus/vendor/bin:$PATH"' >> $BASH_ENV
 
 version: 2
 
@@ -19,6 +18,10 @@ jobs:
   sandbox:
     <<: *defaults
     steps:
+      - checkout
+      - run:
+          name: Configure local build environment
+          command: *configure-variables
       - run:
           name: Exporting Terminus Token
           command: ssh docker-host "cd $REMOTE_BUILD_DIR && echo TERMINUS_TOKEN=${TERMINUS_TOKEN} | tee -a .docksal/docksal-local.env"
@@ -34,6 +37,10 @@ jobs:
   deploy:
     <<: *defaults
     steps:
+      - checkout
+      - run:
+          name: Configure local build environment
+          command: *configure-variables
       - run:
           name: Installing Terminus
           command: |
