@@ -1,7 +1,7 @@
 defaults: &defaults
   working_directory: /home/agent/build
   docker:
-    - image: docksal/ci-agent:php
+    - image: seandietrich/ci-agent
   environment:
      BASH_ENV: /home/agent/.bashrc  # Tell CircleCI where to read the shared build environment variables from
   steps:
