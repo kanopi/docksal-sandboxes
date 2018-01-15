@@ -1,0 +1,62 @@
+defaults: &defaults
+  working_directory: /home/agent/build
+  docker:
+    - image: seandietrich/ci-agent:latest
+  environment:
+     BASH_ENV: /home/agent/.bashrc  # Tell CircleCI where to read the shared build environment variables from
+  steps:
+    - checkout
+
+version: 2
+
+jobs:
+  sandbox:
+    <<: *defaults
+    steps:
+      - run:
+          name: Configure local build environment
+          command: |
+            touch $BASH_ENV
+            echo 'source build-env' >> $BASH_ENV
+      - run:
+          name: Exporting Terminus Token
+          command: ssh docker-host "cd $REMOTE_BUILD_DIR && echo TERMINUS_TOKEN=${TERMINUS_TOKEN} | tee -a .docksal/docksal-local.env"
+      - run:
+          name: Sandbox provisioning
+          command: |
+            slack "Started sandbox build for branch *${GIT_BRANCH_NAME}*"
+            build-notify pending
+            build-init
+            ssh docker-host "cd $REMOTE_BUILD_DIR && fin init"
+            slack "Completed sandbox build for branch *${GIT_BRANCH_NAME}*:\n<http://${DOMAIN}|http://${DOMAIN}>"
+            if [[ $? == 0 ]]; then build-notify success; else build-notify failure; fi
+  deploy:
+    <<: *defaults
+    steps:
+      - run:
+          name: Installing Terminus
+          command: |
+            composer -n global require -n "hirak/prestissimo:^0.3"
+            /usr/bin/env COMPOSER_BIN_DIR=$HOME/bin composer -n --working-dir=$HOME require pantheon-systems/terminus "^1"
+      - run:
+          name: Deploying to provider
+          command: |
+            echo "Hello";
+
+workflows:
+  version: 2
+  build_sandbox:
+    jobs:
+      - sandbox:
+          filters:
+            branches:
+              ignore: master
+          context: org-global
+
+  deployment:
+    jobs:
+      - deploy:
+          filters:
+            branches:
+              only: master
+          context: org-global
