@@ -18,7 +18,6 @@ jobs:
   sandbox:
     <<: *defaults
     steps:
-      - checkout
       - run:
           name: Configure local build environment
           command: *configure-variables
@@ -37,7 +36,6 @@ jobs:
   deploy:
     <<: *defaults
     steps:
-      - checkout
       - run:
           name: Configure local build environment
           command: *configure-variables
@@ -51,7 +49,7 @@ jobs:
           name: Authenticating Pantheon Account
           command: |
             terminus auth:login --machine-token=${TERMINUS_TOKEN}
-            terminus whomami
+            terminus whoami
       - run:
           name: Deploying to provider
           command: |
