@@ -39,6 +39,13 @@ jobs:
             composer -n global require -n "hirak/prestissimo:^0.3"
             /usr/bin/env COMPOSER_BIN_DIR=$HOME/bin composer -n --working-dir=$HOME require pantheon-systems/terminus "^1"
       - run:
+          name: Authenticating Pantheon Account
+          command: |
+            terminus auth:login --machine-token=${TERMINUS_TOKEN}
+            terminus whomai
+      - run:
+          name:
+      - run:
           name: Deploying to provider
           command: |
             echo "Hello";
