@@ -6,6 +6,12 @@ defaults: &defaults
      BASH_ENV: /home/agent/.bashrc  # Tell CircleCI where to read the shared build environment variables from
   steps:
     - checkout
+    - run:
+        name: Configure local build environment
+        command: |
+          touch $BASH_ENV
+          echo 'source build-env' >> $BASH_ENV
+          echo 'PATH="/tmp/terminus/vendor/bin:$PATH"' >> $BASH_ENV
 
 version: 2
 
@@ -13,11 +19,6 @@ jobs:
   sandbox:
     <<: *defaults
     steps:
-      - run:
-          name: Configure local build environment
-          command: |
-            touch $BASH_ENV
-            echo 'source build-env' >> $BASH_ENV
       - run:
           name: Exporting Terminus Token
           command: ssh docker-host "cd $REMOTE_BUILD_DIR && echo TERMINUS_TOKEN=${TERMINUS_TOKEN} | tee -a .docksal/docksal-local.env"
@@ -36,8 +37,9 @@ jobs:
       - run:
           name: Installing Terminus
           command: |
-            composer -n global require -n "hirak/prestissimo:^0.3"
-            /usr/bin/env COMPOSER_BIN_DIR=$HOME/bin composer -n --working-dir=$HOME require pantheon-systems/terminus "^1"
+            curl -O /tmp/installer.php https://raw.githubusercontent.com/pantheon-systems/terminus-installer/master/builds/installer.phar
+            mkdir -p /tmp/terminus
+            php installer.phar install --install-dir=/tmp/terminus
       - run:
           name: Authenticating Pantheon Account
           command: |
