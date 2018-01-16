@@ -33,10 +33,6 @@ jobs:
             ssh docker-host "cd $REMOTE_BUILD_DIR && fin init"
             slack "Completed sandbox build for branch *${GIT_BRANCH_NAME}*:\n<http://${DOMAIN}|http://${DOMAIN}>"
             if [[ $? == 0 ]]; then build-notify success; else build-notify failure; fi
-    branches:
-      ignore:
-        - master
-    context: org-global
 
   deploy:
     <<: *defaults
@@ -81,7 +77,20 @@ jobs:
               echo "Site not in GIT mode."
               exit 1
             fi
-    branches:
-      only:
-        - master
-    context: org-global
+
+workflows:
+  version: 2
+  building:
+    jobs:
+      - sandbox:
+          filters:
+            branches:
+              ignore: master
+          context: org-global
+  deployment:
+    jobs:
+      - deploy:
+          filters:
+            branches:
+              only: master
+          context: org-global
