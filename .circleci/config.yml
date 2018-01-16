@@ -64,7 +64,7 @@ jobs:
             if [ $MODE = 'git' ]; then
               echo "Getting GIT Url for Pantheon Site ${PANTHEON_SITE}..."
               URL=$(terminus connection:info ${PANTHEON_SITE}.dev --field="Git URL")
-              echo "Cloning Site...
+              echo "Cloning Site..."
               git clone $URL /tmp/${PANTHEON_SITE}
               cd /tmp/${PANTHEON_SITE}
               git remote add remote ${GIT_REPO_URL}
