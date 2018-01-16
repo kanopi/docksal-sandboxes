@@ -67,9 +67,9 @@ jobs:
               echo "Cloning Site..."
               git clone $URL /tmp/${PANTHEON_SITE}
               cd /tmp/${PANTHEON_SITE}
-              git remote add remote ${GIT_REPO_URL}
+              git remote add remote $GIT_REPO_URL
               echo "Merging code into Master"
-              git merge -X theirs --no-ff remote/master
+              git merge -X theirs --no-ff -q --no-edit --commit -m 'Merged Master branch' -X theirs remote/master
               git push origin master
             else
               echo "Site not in GIT mode."
