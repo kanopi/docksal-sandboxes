@@ -62,12 +62,18 @@ jobs:
             #  terminus connection:set ${PANTHEON_SITE}.dev git
             #fi
             if [ $MODE = 'git' ]; then
+              echo "Getting GIT Url for Pantheon Site ${PANTHEON_SITE}..."
               URL=$(terminus connection:info ${PANTHEON_SITE}.dev --field="Git URL")
+              echo "Cloning Site...
               git clone $URL /tmp/${PANTHEON_SITE}
               cd /tmp/${PANTHEON_SITE}
               git remote add remote ${GIT_REPO_URL}
+              echo "Merging code into Master"
               git merge -X theirs --no-ff remote/master
               git push origin master
+            else
+              echo "Site not in GIT mode."
+              exit 1
             fi
 
 workflows:
