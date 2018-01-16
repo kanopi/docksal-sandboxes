@@ -22,14 +22,13 @@ jobs:
       - checkout
       - run: *configure-variables
       - run:
-          name: Exporting Terminus Token
-          command: ssh docker-host "cd $REMOTE_BUILD_DIR && echo TERMINUS_TOKEN=${TERMINUS_TOKEN} | tee -a .docksal/docksal-local.env"
-      - run:
           name: Sandbox provisioning
           command: |
             slack "Started sandbox build for branch *${GIT_BRANCH_NAME}*"
             build-notify pending
             build-init
+
+            ssh docker-host "cd $REMOTE_BUILD_DIR && echo TERMINUS_TOKEN=${TERMINUS_TOKEN} | tee -a .docksal/docksal-local.env"
             ssh docker-host "cd $REMOTE_BUILD_DIR && fin init"
             slack "Completed sandbox build for branch *${GIT_BRANCH_NAME}*:\n<http://${DOMAIN}|http://${DOMAIN}>"
             if [[ $? == 0 ]]; then build-notify success; else build-notify failure; fi
