@@ -69,6 +69,7 @@ jobs:
               cd /tmp/${PANTHEON_SITE}
               git remote add remote $GIT_REPO_URL
               echo "Merging code into Master"
+              git fetch remote
               git merge -X theirs --no-ff -q --no-edit --commit -m 'Merged Master branch' -X theirs remote/master
               git push origin master
             else
