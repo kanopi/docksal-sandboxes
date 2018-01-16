@@ -26,12 +26,12 @@ jobs:
           command: |
             slack "Started sandbox build for branch *${GIT_BRANCH_NAME}*"
             echo "${DOCKSAL_HOST_IP} ${DOCKSAL_HOST}" | sudo tee -a /etc/hosts
-            build-notify pending
+            #build-notify pending
             build-init
             ssh docker-host "cd $REMOTE_BUILD_DIR && echo TERMINUS_TOKEN=${TERMINUS_TOKEN} | tee -a .docksal/docksal-local.env"
             ssh docker-host "cd $REMOTE_BUILD_DIR && fin init"
             slack "Completed sandbox build for branch *${GIT_BRANCH_NAME}*:\n<http://${DOMAIN}|http://${DOMAIN}>"
-            if [[ $? == 0 ]]; then build-notify success; else build-notify failure; fi
+            #if [[ $? == 0 ]]; then build-notify success; else build-notify failure; fi
 
   deploy:
     <<: *defaults
@@ -69,9 +69,11 @@ jobs:
               cd /tmp/${PANTHEON_SITE}
               git remote add remote $GIT_REPO_URL
               echo "Merging code into Master"
+              slack "Merging code into master for ${PANTHEON_SITE}"
               git fetch remote
               git merge -X theirs --no-ff -q --no-edit --commit -m 'Merged Master branch' -X theirs remote/master
               git push origin master
+              slack "Merge completed for ${PANTHEON_SITE}."
             else
               echo "Site not in GIT mode."
               exit 1
