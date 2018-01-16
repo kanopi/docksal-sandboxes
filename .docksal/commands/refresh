@@ -10,23 +10,24 @@
 set -e
 
 LIVE=false
-FILES=false
+ELEMENTS='db'
 
-while getopts 'a:s:e:lf' flag; do
-  case $flag in
-    a)
-      TERMINUS_EMAIL=${OPTARG}
-      ;;
-    s)
-      PANTHEON_SITE=${OPTARG}
-      ;;
-    e)
-      PANTHEON_ENV=${OPTARG}
-      ;;
-    l)
-      LIVE=true
-      ;;
-  esac
+# options may be followed by one colon to indicate they have a required argument
+if ! options=$(getopt -o s:e:d:l -l site:,env:,live,data: -- "$@")
+then
+    # something went wrong, getopt will put out an error message for us
+    exit 1
+fi
+
+while [ $# -gt 0 ]
+do
+    case $1 in
+    -s|--site) PANTHEON_SITE="$2"; shift ;;
+    -e|--env) PANTHEON_ENV="$2"; shift ;;
+    -l|--live) LIVE=true; ;;
+    -d|--data) ELEMENTS="$2"; shift;;
+    esac
+    shift
 done
 
 TMP_USER=$(terminus whoami);
@@ -43,38 +44,57 @@ SITEDIR_PATH="${DOCROOT_PATH}/sites/${SITE_DIRECTORY}"
 cd $PROJECT_ROOT
 cd $SITEDIR_PATH
 
-if [ ! -d ${PROJECT_ROOT}/sites/${SITE_DIRECTORY}/files ]; then
-    mkdir ${PROJECT_ROOT}/sites/${SITE_DIRECTORY}/files
-fi
-chmod -R 755 files
-
-DBFILE="/tmp/${PANTHEON_SITE}.sql"
-if [ ! -f $DBFILE ] || [ ! -z $(find ${DBFILE} -mmin +3600) ]; then
- echo "${DBFILE} need updating"
-
-  echo "Exporting latest database..."
-  if [ -f $DBFILE ] && [ ! -z $(find ${DBFILE} -mmin +3600) ]; then
-    rm -rf $DBFILE
-  fi
-
-  if
-  terminus env:wake ${PANTHEON_SITE}.${PANTHEON_ENV}
-  DBCONN=$(terminus connection:info ${PANTHEON_SITE}.${PANTHEON_ENV} --field="MySQL Command")
-  DBDUMP=${DBCONN/mysql /mysqldump }
-  eval $DBDUMP " --result-file=$DBFILE"
+if [ ! -d ~/tmp ]; then
+    mkdir ~/tmp
 fi
 
-echo "Importing Database..."
-drush sql-cli < ${DBFILE}
+if [ $ELEMENTS = 'all' ] || [ $ELEMENTS = 'db' ]; then
+    DBFILE="/tmp/${PANTHEON_ENV}.${PANTHEON_SITE}.sql"
+    if [ ! -f $DBFILE ] || [ ! -z $(find ${DBFILE} -mmin +3600) ]; then
+     echo "${DBFILE} need updating"
+
+      echo "Exporting latest database..."
+      if [ -f $DBFILE ] && [ ! -z $(find ${DBFILE} -mmin +3600) ]; then
+        rm -rf $DBFILE
+      fi
+
+      if $LIVE ; then
+        terminus env:wake ${PANTHEON_SITE}.${PANTHEON_ENV}
+        DBCONN=$(terminus connection:info ${PANTHEON_SITE}.${PANTHEON_ENV} --field="MySQL Command")
+        DBDUMP=${DBCONN/mysql /mysqldump }
+        eval $DBDUMP " --result-file=${DBFILE}"
+      else
+        terminus backup:get ${PANTHEON_SITE}.${PANTHEON_ENV} --element="db" --to="${DBFILE}.gz"
+        gunzip ${DBFILE}.gz
+      fi
+    fi
+
+    echo "Importing Database..."
+    drush sql-cli < ${DBFILE}
+fi
+
+if [ $ELEMENTS = 'all' ] || [ $ELEMENTS = 'files' ]; then
+    cd $SITEDIR_PATH
+    echo "Downloading latest set of files from ${PANTHEON_SITE}..."
+
+    FILES_DIRECTORY=${PROJECT_ROOT}/sites/${SITE_DIRECTORY}/files
+    mkdir ${FILES_DIRECTORY}
+    if $LIVE ; then
+        if [ ! -d ${FILES_DIRECTORY} ]; then
+            mkdir ${FILES_DIRECTORY}
+        fi
+        cd $FILES_DIRECTORY
+      terminus rsync ${PANTHEON_SITE}.${PANTHEON_ENV}:files .
+    else
+      FILES="/tmp/${PANTHEON_ENV}.${PANTHEON_SITE}.tar.gz"
+      terminus backup:get kanopi-support.live --element=files --to="${FILES}"
+      rm -rf ${FILES_DIRECTORY}
+      tar -xf ${FILES}
+      mv files_* files
+    fi
+    echo "Fixing files directory permissions..."
+    chmod -R 755 files
+fi
 
 cd ${DOCROOT_PATH}
-
-echo "Running Update.php..."
-drush updatedb -y
-
-echo "Set User 1 username to admin..."
-drush sql-query "UPDATE ${DATABASE_PREFIX}users SET mail=\"admin@example.com\", name=\"admin\" WHERE uid=1"
-
-echo "Reseting user 1 password to admin..."
-drush user-password admin --password=admin
-
+/var/www/.docksal/commands/site-build

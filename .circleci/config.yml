@@ -52,7 +52,23 @@ jobs:
       - run:
           name: Deploying to provider
           command: |
-            echo "Hello";
+            MODE=$(terminus env:info ${PANTHEON_SITE}.dev --field="Connection Mode")
+            #if [ $MODE = 'sftp' ]; then
+            #  COMMIT=$(terminus env:diffstat ${PANTHEON_SITE}.dev --field="File" | wc -l)
+            #  if [ $COMMIT -gt 0 ]; then
+            #    COMMIT_MSG=${COMMIT_MSG:-"Autocommitting code from CircleCI"}
+            #    terminus env:commit ${PANTHEON_SITE}.dev --message="${COMMIT_MSG}"
+            #  fi
+            #  terminus connection:set ${PANTHEON_SITE}.dev git
+            #fi
+            if [ $MODE = 'git' ]; then
+              URL=$(terminus connection:info ${PANTHEON_SITE}.dev --field="Git URL")
+              git clone $URL /tmp/${PANTHEON_SITE}
+              cd /tmp/${PANTHEON_SITE}
+              git remote add remote ${GIT_REPO_URL}
+              git merge -X theirs --no-ff remote/master
+              git push origin master
+            fi
 
 workflows:
   version: 2
