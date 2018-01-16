@@ -82,15 +82,16 @@ workflows:
   build_sandbox:
     jobs:
       - sandbox:
+          context: org-global
           filters:
             branches:
-              ignore: master
-          context: org-global
-
+              ignore:
+                - master
   deployment:
     jobs:
       - deploy:
+          context: org-global
           filters:
             branches:
-              only: master
-          context: org-global
+              only:
+                - master
