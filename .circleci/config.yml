@@ -83,14 +83,14 @@ workflows:
   building:
     jobs:
       - sandbox:
-        filters:
-          branches:
-            ignore: master
-        context: org-global
+          filters:
+            branches:
+              ignore: master
+          context: org-global
   deployment:
     jobs:
       - deploy:
-        filters:
-          branches:
-            only: master
-        context: org-global
+          filters:
+            branches:
+              only: master
+          context: org-global
